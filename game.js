@@ -9,7 +9,7 @@
 
 /* ----------------------------- CONFIG ------------------------------ */
 const BASE_JACKPOT_CHANCE = 0.05; // 5% pedido
-const START_COINS = 60;
+const START_COINS = 75;
 const JACKPOT_SYMBOL = "🎰";
 
 // Símbolos normales: peso (rareza) y valor (puntos base si hay combo)
@@ -148,7 +148,7 @@ function computePrize(grid, tier, isJackpot, cost) {
     // El jackpot paga ~9× el coste de la carta, escalado por piso y reliquias.
     // (No usa tier.mult: el coste ya distingue los tiers, así el retorno
     //  esperado es parecido entre BRONCE/PLATA/ORO y existe ventaja de la casa.)
-    const base = cost * 9 * F * m.jackpotMult * (1 + m.payoutBonus);
+    const base = cost * 13 * F * m.jackpotMult * (1 + m.payoutBonus);
     return { prize: Math.round(base), winIdx: grid.map((g, i) => g === JACKPOT_SYMBOL ? i : -1).filter(i => i >= 0) };
   }
 
@@ -187,7 +187,7 @@ function computePrize(grid, tier, isJackpot, cost) {
     }
   }
 
-  let prize = raw * tier.mult * F * 0.42 * (1 + m.payoutBonus);
+  let prize = raw * tier.mult * F * 0.62 * (1 + m.payoutBonus);
   prize = Math.round(prize);
 
   return { prize, winIdx: [...winIdx] };
