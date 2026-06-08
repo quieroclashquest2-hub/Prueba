@@ -12,6 +12,13 @@ const BASE_JACKPOT_CHANCE = 0.05; // 5% pedido
 const START_COINS = 75;
 const JACKPOT_SYMBOL = "🎰";
 
+// Constantes de premios (fuente única para el cálculo y la tabla de info)
+const PAYOUT_FACTOR = 0.62;   // factor global de premios normales
+const JACKPOT_MULT = 13;      // el jackpot paga coste × esto
+const LINE_BASE_BONUS = 1.5;  // bonus de puntos por cada línea de 3 en raya
+const GEM_ICONS = ["💎", "7️⃣"];
+const FRUIT_ICONS = ["🍒", "🍋"];
+
 // Símbolos normales: peso (rareza) y valor (puntos base si hay combo)
 const SYMBOLS = [
   { icon: "🍒", weight: 30, value: 2 },
@@ -97,6 +104,14 @@ function floorMult() {
   return 1 + (S.floor - 1) * 0.45;
 }
 
+// Valor de un símbolo con las reliquias aplicadas
+function effValue(sym, m) {
+  let v = sym.value;
+  if (GEM_ICONS.includes(sym.icon)) v *= m.gemMult;
+  if (FRUIT_ICONS.includes(sym.icon)) v *= m.fruitMult;
+  return v;
+}
+
 function jackpotChance() {
   return Math.min(0.95, BASE_JACKPOT_CHANCE + S.mods.jackpotAdd);
 }
@@ -148,7 +163,7 @@ function computePrize(grid, tier, isJackpot, cost) {
     // El jackpot paga ~9× el coste de la carta, escalado por piso y reliquias.
     // (No usa tier.mult: el coste ya distingue los tiers, así el retorno
     //  esperado es parecido entre BRONCE/PLATA/ORO y existe ventaja de la casa.)
-    const base = cost * 13 * F * m.jackpotMult * (1 + m.payoutBonus);
+    const base = cost * JACKPOT_MULT * F * m.jackpotMult * (1 + m.payoutBonus);
     return { prize: Math.round(base), winIdx: grid.map((g, i) => g === JACKPOT_SYMBOL ? i : -1).filter(i => i >= 0) };
   }
 
@@ -163,31 +178,23 @@ function computePrize(grid, tier, isJackpot, cost) {
   for (const sym of SYMBOLS) {
     const c = count[sym.icon] || 0;
     if (c >= 3) {
-      let v = sym.value;
-      if (sym.icon === "💎" || sym.icon === "7️⃣") v *= m.gemMult;
-      if (sym.icon === "🍒" || sym.icon === "🍋") v *= m.fruitMult;
-      raw += v * (c - 2);
+      raw += effValue(sym, m) * (c - 2);
       grid.forEach((g, i) => g === sym.icon && winIdx.add(i));
     }
   }
 
   // Bonus por líneas exactas en raya (3 iguales en una línea)
-  let lineHits = 0;
   for (const [a, b, c] of LINES) {
     if (grid[a] === grid[b] && grid[b] === grid[c]) {
       const sym = SYMBOLS.find(s => s.icon === grid[a]);
       if (sym) {
-        let v = sym.value;
-        if (sym.icon === "💎" || sym.icon === "7️⃣") v *= m.gemMult;
-        if (sym.icon === "🍒" || sym.icon === "🍋") v *= m.fruitMult;
-        raw += v * (1.5 + m.lineBonus);
-        lineHits++;
+        raw += effValue(sym, m) * (LINE_BASE_BONUS + m.lineBonus);
         winIdx.add(a); winIdx.add(b); winIdx.add(c);
       }
     }
   }
 
-  let prize = raw * tier.mult * F * 0.62 * (1 + m.payoutBonus);
+  let prize = raw * tier.mult * F * PAYOUT_FACTOR * (1 + m.payoutBonus);
   prize = Math.round(prize);
 
   return { prize, winIdx: [...winIdx] };
@@ -475,6 +482,86 @@ function log(msg, cls = "") {
   while (box.children.length > 40) box.removeChild(box.lastChild);
 }
 
+/* ----------------------- TABLA DE PREMIOS (INFO) ------------------- */
+function buildInfo() {
+  // Contexto actual de la run (o valores por defecto en la portada)
+  const floor = S ? S.floor : 1;
+  const mods = S ? S.mods : freshMods();
+  const fMult = 1 + (floor - 1) * 0.45;
+  const jpChance = Math.min(0.95, BASE_JACKPOT_CHANCE + mods.jackpotAdd);
+
+  const costOf = t => Math.max(1, Math.round(t.baseCost * (1 + (floor - 1) * 0.35) * mods.costMult));
+  // Premio por 3 figuras iguales (en cualquier posición) en un tier dado
+  const figCoins = (sym, t) =>
+    Math.round(effValue(sym, mods) * (3 - 2) * t.mult * fMult * PAYOUT_FACTOR * (1 + mods.payoutBonus));
+  // Puntos extra que aporta una línea de 3 en raya de esa figura, ya en monedas (tier BRONCE de referencia)
+  const lineCoins = (sym, t) =>
+    Math.round(effValue(sym, mods) * (LINE_BASE_BONUS + mods.lineBonus) * t.mult * fMult * PAYOUT_FACTOR * (1 + mods.payoutBonus));
+  const jackpotCoins = t =>
+    Math.round(costOf(t) * JACKPOT_MULT * fMult * mods.jackpotMult * (1 + mods.payoutBonus));
+
+  // -------- contexto --------
+  let html = `<div class="info-ctx">
+    Piso <b>${floor}</b> · multiplicador de piso <b>×${fMult.toFixed(2)}</b> ·
+    JACKPOT <b>${Math.round(jpChance * 100)}%</b>
+    ${S && S.relics.length ? ` · reliquias activas: <b>${S.relics.length}</b>` : ""}
+    <br>Las monedas mostradas ya incluyen tier, piso y reliquias actuales.
+  </div>`;
+
+  // -------- premios por figura --------
+  html += `<div class="info-section-title">PREMIO POR FIGURA · 3 iguales</div>`;
+  html += `<table class="prize-table">
+    <tr><th>Figura</th><th>Valor</th><th class="t-bronce">BRONCE</th><th class="t-plata">PLATA</th><th class="t-oro">ORO</th></tr>`;
+  for (const sym of [...SYMBOLS].reverse()) {
+    const ev = effValue(sym, mods);
+    const buff = ev !== sym.value ? ` <span style="color:var(--relic)">(×${(ev / sym.value).toFixed(0)})</span>` : "";
+    html += `<tr>
+      <td class="fig">${sym.icon}</td>
+      <td class="val">${ev}${buff}</td>
+      <td class="t-bronce">${figCoins(sym, TIERS[0])}＄</td>
+      <td class="t-plata">${figCoins(sym, TIERS[1])}＄</td>
+      <td class="t-oro">${figCoins(sym, TIERS[2])}＄</td>
+    </tr>`;
+  }
+  html += `</table>`;
+  html += `<div class="info-note">Con <b>4 iguales</b> el premio se duplica y con <b>5</b> se triplica
+    (cada copia extra suma otra vez el valor de la figura).</div>`;
+
+  // -------- premios por forma --------
+  html += `<div class="info-section-title">PREMIO POR FORMA · 3 en raya</div>`;
+  html += `<div class="info-note">Además del premio por figura, cada <b>línea</b> de 3 iguales
+    (fila, columna o diagonal) paga un <b class="gold">extra ×${(LINE_BASE_BONUS + mods.lineBonus).toFixed(1)}</b>
+    del valor de esa figura. Hay <b>8 formas</b> ganadoras:</div>`;
+  html += `<div class="shapes-grid">`;
+  const labelFor = i => (i < 3 ? "FILA" : i < 6 ? "COLUMNA" : "DIAGONAL");
+  LINES.forEach((line, i) => {
+    const on = new Set(line);
+    let cells = "";
+    for (let c = 0; c < 9; c++) cells += `<div class="mc ${on.has(c) ? "on" : ""}"></div>`;
+    html += `<div class="shape-item"><div class="mini">${cells}</div><div class="sh-label">${labelFor(i)}</div></div>`;
+  });
+  html += `</div>`;
+  html += `<div class="info-note">Ejemplo: 3 <b>⭐</b> en una diagonal de una rasca BRONCE pagan
+    <b class="gold">${figCoins(SYMBOLS[3], TIERS[0]) + lineCoins(SYMBOLS[3], TIERS[0])}＄</b>
+    (${figCoins(SYMBOLS[3], TIERS[0])} por figura + ${lineCoins(SYMBOLS[3], TIERS[0])} por la línea).</div>`;
+
+  // -------- jackpot --------
+  html += `<div class="info-section-title">JACKPOT 🎰</div>`;
+  html += `<div class="jackpot-box">
+    <div class="jp-head">🎰 ${Math.round(jpChance * 100)}% por rasca</div>
+    <div class="jp-body">Paga <b>${JACKPOT_MULT}×</b> el coste de la carta (× piso × reliquias). En el piso ${floor}:
+      <br>BRONCE <b class="gold">${jackpotCoins(TIERS[0])}＄</b> ·
+      PLATA <b class="gold">${jackpotCoins(TIERS[1])}＄</b> ·
+      ORO <b class="gold">${jackpotCoins(TIERS[2])}＄</b>
+    </div>
+  </div>`;
+
+  document.getElementById("info-content").innerHTML = html;
+}
+
+function openInfo() { buildInfo(); $("#info-modal").hidden = false; }
+function closeInfo() { $("#info-modal").hidden = true; }
+
 /* --------------------------- PANTALLAS ----------------------------- */
 function showScreen(id) {
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
@@ -505,4 +592,8 @@ window.addEventListener("DOMContentLoaded", () => {
   $("#btn-scratch-all").addEventListener("click", scratchAll);
   $("#btn-cash").addEventListener("click", cashOut);
   $("#btn-descend").addEventListener("click", descend);
+  $("#btn-info").addEventListener("click", openInfo);
+  $("#info-close").addEventListener("click", closeInfo);
+  $("#info-backdrop").addEventListener("click", closeInfo);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") closeInfo(); });
 });

@@ -9,6 +9,17 @@
 <body>
   <div id="scanlines"></div>
 
+  <button id="btn-info" class="info-btn" title="Tabla de premios" aria-label="Tabla de premios">ⓘ</button>
+
+  <div id="info-modal" class="modal" hidden>
+    <div class="modal-backdrop" id="info-backdrop"></div>
+    <div class="modal-box" role="dialog" aria-modal="true" aria-label="Tabla de premios">
+      <button class="modal-close" id="info-close" aria-label="Cerrar">✕</button>
+      <h2 class="modal-title">TABLA DE PREMIOS</h2>
+      <div id="info-content"></div>
+    </div>
+  </div>
+
   <main id="app">
     <!-- ===================== PANTALLA DE INICIO ===================== -->
     <section id="screen-title" class="screen active">
