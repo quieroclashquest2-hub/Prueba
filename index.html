@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RASCA ROGUE — Simulador de Rascas Roguelike</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="scanlines"></div>
+
+  <main id="app">
+    <!-- ===================== PANTALLA DE INICIO ===================== -->
+    <section id="screen-title" class="screen active">
+      <div class="title-box">
+        <pre class="logo">
+ ╦═╗╔═╗╔═╗╔═╗╔═╗   ╦═╗╔═╗╔═╗╦ ╦╔═╗
+ ╠╦╝╠═╣╚═╗║  ╠═╣   ╠╦╝║ ║║ ╦║ ║║╣
+ ╩╚═╩ ╩╚═╝╚═╝╩ ╩   ╩╚═╚═╝╚═╝╚═╝╚═╝</pre>
+        <p class="tagline">// SIMULADOR DE RASCAS · 3×3 · MODO ROGUELIKE //</p>
+
+        <div class="rules">
+          <p>► Cada rasca es una tirada en una grilla <b>3×3</b>.</p>
+          <p>► <b>5%</b> de probabilidad base de <b class="gold">JACKPOT</b>.</p>
+          <p>► Descífrala, gana monedas y <b>desciende</b> de piso.</p>
+          <p>► Compra <b class="relic">reliquias</b> que doblan tu suerte.</p>
+          <p>► Si te quedas sin monedas... <b class="danger">la run termina</b>.</p>
+        </div>
+
+        <div class="best-run" id="best-run-box">RÉCORD: —</div>
+
+        <button id="btn-start" class="btn btn-big">▶ INICIAR RUN</button>
+      </div>
+    </section>
+
+    <!-- ===================== PANTALLA DE JUEGO ===================== -->
+    <section id="screen-game" class="screen">
+      <header id="hud">
+        <div class="hud-cell">
+          <span class="hud-label">MONEDAS</span>
+          <span class="hud-value" id="hud-coins">0</span>
+        </div>
+        <div class="hud-cell">
+          <span class="hud-label">PISO</span>
+          <span class="hud-value" id="hud-floor">1</span>
+        </div>
+        <div class="hud-cell">
+          <span class="hud-label">JACKPOT</span>
+          <span class="hud-value gold" id="hud-jackpot">5%</span>
+        </div>
+        <div class="hud-cell">
+          <span class="hud-label">PUNTOS</span>
+          <span class="hud-value" id="hud-score">0</span>
+        </div>
+      </header>
+
+      <div id="game-body">
+        <!-- Columna izquierda: tienda / acciones -->
+        <aside id="left-panel">
+          <h3 class="panel-title">TIENDA DE PISO</h3>
+          <div id="shop"></div>
+
+          <div id="floor-actions">
+            <button id="btn-descend" class="btn btn-descend">▼ DESCENDER AL PISO <span id="next-floor">2</span></button>
+          </div>
+
+          <h3 class="panel-title">RELIQUIAS</h3>
+          <div id="relics-list"><span class="empty-hint">Sin reliquias todavía</span></div>
+        </aside>
+
+        <!-- Centro: rasca -->
+        <div id="center-panel">
+          <div id="card-stage">
+            <div id="card-tier" class="card-tier">—</div>
+            <div id="grid"></div>
+            <div id="card-controls">
+              <button id="btn-scratch-all" class="btn" disabled>✦ RASCAR TODO</button>
+              <button id="btn-cash" class="btn btn-cash" disabled>＄ COBRAR</button>
+            </div>
+            <div id="card-result" class="card-result"></div>
+          </div>
+        </div>
+
+        <!-- Derecha: registro -->
+        <aside id="right-panel">
+          <h3 class="panel-title">REGISTRO</h3>
+          <div id="log"></div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ===================== GAME OVER ===================== -->
+    <section id="screen-over" class="screen">
+      <div class="title-box">
+        <pre class="logo gameover">
+ ╔═╗╔═╗╔╦╗╔═╗   ╔═╗╦  ╦╔═╗╦═╗
+ ║ ╦╠═╣║║║║╣    ║ ║╚╗╔╝║╣ ╠╦╝
+ ╚═╝╩ ╩╩ ╩╚═╝   ╚═╝ ╚╝ ╚═╝╩╚═</pre>
+        <div id="over-stats" class="over-stats"></div>
+        <button id="btn-retry" class="btn btn-big">↻ NUEVA RUN</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="game.js"></script>
+</body>
+</html>
