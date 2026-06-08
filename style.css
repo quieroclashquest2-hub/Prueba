@@ -67,6 +67,9 @@ html, body {
   font-size: 14px;
   line-height: 1.1;
   margin: 0 0 8px;
+  display: inline-block;
+  text-align: left;
+  white-space: pre;
 }
 .logo.gameover { color: var(--danger); text-shadow: 0 0 12px rgba(255,91,91,.4); }
 
