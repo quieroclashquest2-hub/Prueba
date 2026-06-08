@@ -15,6 +15,8 @@ Todo el juego es HTML/CSS/JS puro, sin dependencias ni build. Abre `index.html` 
 7. **DESCIENDE** de piso para multiplicar premios... y costes.
 8. Si te quedas sin monedas suficientes para comprar una rasca, **la run termina** (permadeath). Tu mejor puntuación se guarda como récord.
 
+El botón **ⓘ** (esquina superior derecha) abre la **tabla de premios**: lo que paga cada figura (3+ iguales), las 8 formas ganadoras (filas, columnas y diagonales) y el jackpot, con las monedas exactas según el piso, el tier y las reliquias activas.
+
 ## Elementos roguelike
 
 - **Permadeath:** una sola vida por run; al quebrar, vuelves a empezar.
